@@ -1,0 +1,40 @@
+name: Android APK Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install
+      - run: npm run build
+      - run: npx cap sync capacitor-android
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - run: |
+          cd capacitor-android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VisionOS-AR-apk
+          path: capacitor-android/app/build/outputs/apk/debug/*.apk
+          retention-days: 30
